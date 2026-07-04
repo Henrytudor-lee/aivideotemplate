@@ -1,0 +1,15 @@
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "MiniMax Video Studio",
+  description: "基于 MiniMax Video Agent 的视频生成工作台",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="zh-CN">
+      <body className="min-h-screen bg-bg text-text antialiased">{children}</body>
+    </html>
+  );
+}
