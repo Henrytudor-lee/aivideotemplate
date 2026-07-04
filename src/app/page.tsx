@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { useState } from "react";
 import { TEMPLATES, getTemplate } from "@/lib/templates";
 import { TemplateCard } from "@/components/TemplateCard";
@@ -158,44 +159,71 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-8">
-      <header className="mb-8 flex items-start justify-between">
+      <motion.header
+        className="mb-8 flex items-start justify-between"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
         <div>
           <h1 className="text-3xl font-bold">🎬 MiniMax Video Studio</h1>
           <p className="mt-2 text-sm text-muted">
             基于 MiniMax Video Agent · 11 个官方模板 · 多任务并线 · 侧边栏面板
           </p>
         </div>
-        <button
+        <motion.button
           onClick={() => {
             setDrawerOpen(true);
             setDrawerRefreshTrigger((n) => n + 1);
           }}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium hover:border-accent"
         >
           📋 任务面板
-        </button>
-      </header>
+        </motion.button>
+      </motion.header>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_440px]">
+      <motion.div
+        className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_440px]"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.15, ease: "easeOut" }}
+      >
         <section>
           <h2 className="mb-4 text-lg font-semibold">选择模板</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <motion.div
+            className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: {},
+              show: { transition: { staggerChildren: 0.04 } },
+            }}
+          >
             {TEMPLATES.map((t) => (
-              <TemplateCard
+              <motion.div
                 key={t.id}
-                template={t}
-                selected={t.id === selectedId}
-                onSelect={() => {
-                  setSelectedId(t.id);
-                  resetAll();
-                  // 切到纯文本模板时清掉照片
-                  if (!t.needsMedia) {
-                    handlePhotosChange([]);
-                  }
+                variants={{
+                  hidden: { opacity: 0, y: 12 },
+                  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 30 } },
                 }}
-              />
+              >
+                <TemplateCard
+                  template={t}
+                  selected={t.id === selectedId}
+                  onSelect={() => {
+                    setSelectedId(t.id);
+                    resetAll();
+                    // 切到纯文本模板时清掉照片
+                    if (!t.needsMedia) {
+                      handlePhotosChange([]);
+                    }
+                  }}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </section>
 
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
@@ -298,13 +326,27 @@ export default function HomePage() {
                           {usedCollage ? "📎 拼接" : "🖼️ 单图"} · {enhanceJobId?.slice(0, 8)}...
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <motion.div
+                        className="grid grid-cols-2 gap-2"
+                        initial="hidden"
+                        animate="show"
+                        variants={{
+                          hidden: {},
+                          show: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } },
+                        }}
+                      >
                         {candidates.map((uri, i) => (
-                          <button
+                          <motion.button
                             key={i}
+                            variants={{
+                              hidden: { opacity: 0, scale: 0.7, y: 10 },
+                              show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 380, damping: 26 } },
+                            }}
+                            whileHover={{ scale: 1.04 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => setSelectedIdx(i)}
                             className={[
-                              "relative overflow-hidden rounded-lg border-2 transition-all",
+                              "relative overflow-hidden rounded-lg border-2 transition-colors",
                               selectedIdx === i
                                 ? "border-accent ring-2 ring-accent/50"
                                 : "border-border hover:border-muted",
@@ -327,13 +369,18 @@ export default function HomePage() {
                               #{i + 1}
                             </div>
                             {selectedIdx === i && (
-                              <div className="absolute right-1 top-1 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-white">
+                              <motion.div
+                                initial={{ scale: 0, rotate: -90 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                                className="absolute right-1 top-1 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-white"
+                              >
                                 ✓
-                              </div>
+                              </motion.div>
                             )}
-                          </button>
+                          </motion.button>
                         ))}
-                      </div>
+                      </motion.div>
                     </div>
                   )}
                 </>
@@ -357,7 +404,7 @@ export default function HomePage() {
               </div>
             )}
 
-            <button
+            <motion.button
               onClick={handleSubmitTasks}
               disabled={
                 submitting ||
@@ -365,6 +412,9 @@ export default function HomePage() {
                 (selected.needsText && !textValue.trim()) ||
                 (enhanceEnabled && selected.needsMedia && selectedIdx === null && candidates.length > 0)
               }
+              whileHover={!submitting ? { scale: 1.01 } : {}}
+              whileTap={!submitting ? { scale: 0.98 } : {}}
+              transition={{ type: "spring", stiffness: 400, damping: 28 }}
               className={[
                 "w-full rounded-lg px-4 py-3 text-sm font-semibold transition-colors",
                 !submitting &&
@@ -376,10 +426,10 @@ export default function HomePage() {
               ].join(" ")}
             >
               {getSubmitButtonText()}
-            </button>
+            </motion.button>
           </section>
         </aside>
-      </div>
+      </motion.div>
 
       <TaskDrawer
         open={drawerOpen}

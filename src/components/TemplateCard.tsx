@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { Template } from "@/lib/templates";
 
 type Props = {
@@ -10,10 +11,16 @@ type Props = {
 
 export function TemplateCard({ template, selected, onSelect }: Props) {
   return (
-    <button
+    <motion.button
       onClick={onSelect}
+      whileHover={{ y: -3, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      animate={{
+        scale: selected ? 1.03 : 1,
+      }}
+      transition={{ type: "spring", stiffness: 400, damping: 28 }}
       className={[
-        "group relative overflow-hidden rounded-xl border text-left transition-all",
+        "group relative overflow-hidden rounded-xl border text-left transition-colors",
         "bg-surface hover:bg-surface2",
         selected ? "border-accent ring-2 ring-accent/50" : "border-border hover:border-muted",
       ].join(" ")}
@@ -34,9 +41,14 @@ export function TemplateCard({ template, selected, onSelect }: Props) {
           }}
         />
         {selected && (
-          <div className="absolute right-2 top-2 rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-white">
-            已选
-          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 25 }}
+            className="absolute right-2 top-2 rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-white shadow-lg"
+          >
+            ✓ 已选
+          </motion.div>
         )}
       </div>
 
@@ -53,6 +65,6 @@ export function TemplateCard({ template, selected, onSelect }: Props) {
           )}
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 }
