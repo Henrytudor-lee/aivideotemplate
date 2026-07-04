@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   createTemplateTask,
+  createPromptVideoTask,
   enhanceReferenceImage,
   MiniMaxError,
 } from "@/lib/minimax";
 import { getCurrentUser, setSessionCookie } from "@/lib/session";
 import { createTask, getTask, listTasks } from "@/lib/db";
+import type { Template } from "@/lib/templates";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -58,7 +60,7 @@ export async function POST(req: NextRequest) {
         used_collage: 0,
         text_value: textValue ?? null,
       });
-      submitToMiniMaxAsync(task.id, "", templateId, textValue, userId, false);
+      submitToMiniMaxAsync(task.id, "", tpl, textValue, userId);
       return NextResponse.json({ tasks: [task] });
     }
 
@@ -78,7 +80,7 @@ export async function POST(req: NextRequest) {
         text_value: textValue ?? null,
       });
       created.push(task);
-      submitToMiniMaxAsync(task.id, photoDataUri, templateId, textValue, userId, false);
+      submitToMiniMaxAsync(task.id, photoDataUri, tpl, textValue, userId);
     }
 
     return NextResponse.json({ tasks: created });
@@ -96,19 +98,36 @@ export async function POST(req: NextRequest) {
 async function submitToMiniMaxAsync(
   taskId: string,
   mediaDataUri: string,
-  templateId: string,
+  template: Template,
   textValue: string | undefined,
-  _userId: string,
-  _hasMedia: boolean
+  _userId: string
 ) {
   const { updateTask } = await import("@/lib/db");
   try {
-    const { taskId: externalTaskId } = await createTemplateTask({
-      templateId,
-      mediaDataUri: mediaDataUri || undefined,
-      textValue,
-    });
-    updateTask(taskId, { external_task_id: externalTaskId, status: "processing" });
+    if (template.mode === "official") {
+      // 官方 Video Agent 模板
+      const { taskId: externalTaskId } = await createTemplateTask({
+        templateId: template.templateId,
+        mediaDataUri: mediaDataUri || undefined,
+        textValue,
+      });
+      updateTask(taskId, { external_task_id: externalTaskId, status: "processing" });
+    } else {
+      // prompt 模板（基础视频 API）
+      // 替换 prompt 中的 [用户输入] 占位
+      const finalPrompt = (template.prompt || "").replace(
+        /\[用户输入\]/g,
+        textValue || "natural"
+      );
+      const { taskId: externalTaskId } = await createPromptVideoTask({
+        prompt: finalPrompt,
+        firstFrameDataUri: mediaDataUri || undefined,
+        model: template.model,
+        duration: template.duration,
+        resolution: template.resolution,
+      });
+      updateTask(taskId, { external_task_id: externalTaskId, status: "processing" });
+    }
   } catch (e: any) {
     updateTask(taskId, { status: "failed", error_msg: e?.message || "提交失败" });
   }
