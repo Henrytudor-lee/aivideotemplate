@@ -97,7 +97,9 @@ export default function HomePage() {
 
   // 提交任务到 /api/tasks
   async function handleSubmitTasks() {
-    if (photos.length === 0) return;
+    // 校验
+    if (selected.needsMedia && photos.length === 0) return;
+    if (selected.needsText && !textValue.trim()) return;
     setSubmitting(true);
     setSubmitError(null);
 
@@ -105,23 +107,23 @@ export default function HomePage() {
     form.append("templateId", selected.id);
     if (textValue.trim()) form.append("textValue", textValue.trim());
 
-    if (enhanceEnabled) {
-      // 多图美化：每张单独生成候选。但当前 UI 只对 photos[0] 走了 4 张候选
-      // 设计决策：当前 UI 是"1 张主图 + 4 候选"，所以提交时也只用 1 个任务（用选中候选）
-      if (selectedIdx === null) {
-        setSubmitError("请先选中一张候选图");
-        setSubmitting(false);
-        return;
+    if (selected.needsMedia) {
+      // 图片模板：多图美化或原图
+      if (enhanceEnabled) {
+        if (selectedIdx === null) {
+          setSubmitError("请先选中一张候选图");
+          setSubmitting(false);
+          return;
+        }
+        const selectedUri = candidates[selectedIdx];
+        form.append("photos", dataUriToFile(selectedUri, "candidate.jpg"));
+        form.append("enhance", "false");
+      } else {
+        photos.forEach((p) => form.append("photos", p));
+        form.append("enhance", "false");
       }
-      // 走单图 path：只传选中的候选图作为"美化后图"
-      const selectedUri = candidates[selectedIdx];
-      form.append("photos", dataUriToFile(selectedUri, "candidate.jpg"));
-      form.append("enhance", "false"); // 已经是美化图了
-    } else {
-      // 不美化：原图
-      photos.forEach((p) => form.append("photos", p));
-      form.append("enhance", "false");
     }
+    // 纯文本模板：不传 photos，enhance 也不传
 
     try {
       const r = await fetch("/api/tasks", { method: "POST", body: form });
@@ -149,12 +151,18 @@ export default function HomePage() {
   // 推断主按钮文案
   function getSubmitButtonText(): string {
     if (submitting) return "提交中...";
+    // 纯文本模板：直接生成视频，不走美化候选流程
+    if (!selected.needsMedia) {
+      return textValue.trim() ? "🎬 生成视频" : "请先输入文本";
+    }
+    // 图片模板：走美化候选流程
     if (enhanceEnabled) {
+      if (photos.length === 0) return "请先上传照片";
       if (candidates.length === 0) return `① 先生成 ${CANDIDATE_COUNT} 张候选`;
       if (selectedIdx === null) return "② 选中一张候选";
       return `③ 提交 ${photos.length} 个任务`;
     }
-    return `③ 提交 ${photos.length} 个任务`;
+    return photos.length > 0 ? "🎬 提交生成视频" : "请先上传照片";
   }
 
   return (
@@ -390,7 +398,7 @@ export default function HomePage() {
 
           {/* 步骤 3: 提交任务 */}
           <section className="rounded-xl border border-border bg-surface p-4">
-            <div className="mb-2 text-sm font-medium">③ 提交任务</div>
+            <div className="mb-2 text-sm font-medium">{selected.needsText && !selected.needsMedia ? "② 提交任务" : "③ 提交任务"}</div>
 
             {submittedCount > 0 && (
               <div className="mb-3 rounded-lg border border-green-700 bg-green-900/20 p-2 text-xs text-green-400">
