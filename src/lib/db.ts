@@ -164,12 +164,12 @@ export function deleteTask(id: string, userId: string): boolean {
 export function getTasksStatus(
   userId: string,
   ids: string[]
-): Array<Pick<Task, "id" | "status" | "video_url" | "error_msg" | "external_task_id" | "template_id">> {
+): Array<Pick<Task, "id" | "status" | "video_url" | "error_msg" | "external_task_id">> {
   if (ids.length === 0) return [];
   const placeholders = ids.map(() => "?").join(",");
   return db
     .prepare(
-      `SELECT id, status, video_url, error_msg, external_task_id, template_id
+      `SELECT id, status, video_url, error_msg, external_task_id
        FROM tasks WHERE user_id = ? AND id IN (${placeholders})`
     )
     .all(userId, ...ids) as any;
