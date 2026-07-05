@@ -218,13 +218,18 @@ export async function pollBasicVideoTask(taskId: string): Promise<PollResult> {
   let videoUrl: string | undefined;
   if (resp.status === "Success" && resp.file_id) {
     try {
-      const fileResp = await call<{
-        file: { file_id: string; download_url: string };
-        base_resp: unknown;
-      }>(`/v1/files/retrieve?file_id=${encodeURIComponent(resp.file_id)}`, {
-        method: "GET",
-      });
-      videoUrl = fileResp.file?.download_url;
+      // 手动 fetch（call() 默认加 Content-Type: application/json，GET 不需要）
+      const fileRes = await fetch(
+        `${BASE}/v1/files/retrieve?file_id=${encodeURIComponent(resp.file_id)}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${API_KEY}` },
+          cache: "no-store",
+        }
+      );
+      const fileText = await fileRes.text();
+      const fileBody = JSON.parse(fileText);
+      videoUrl = fileBody?.file?.download_url;
     } catch {
       // 取不到 URL 也不阻断
     }
